@@ -1,0 +1,5 @@
+ONE step, once, then never again:
+A) Blueprint click: dashboard.render.com/blueprints/new -> select "mobile" -> Apply. Then (optional) copy the
+   service's Deploy Hook URL into deploy/.deploy.env for commit-free redeploys.
+B) OR full zero-intervention: paste a Render API key into deploy/.deploy.env (operator pastes it; agents never
+   see or move the value). With the key, agents create ANY new service via api.render.com — no dashboard ever.
