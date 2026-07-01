@@ -1,0 +1,7 @@
+services:
+  - type: web
+    runtime: static
+    name: webpoint-mobile
+    buildCommand: echo "static lane — no build step"
+    staticPublishPath: ./public
+    autoDeploy: true
