@@ -1,0 +1,42 @@
+# DEP-method clone for the Mobile Lane (precedent untouched).
+# Push to main = deploy live. Also manually triggerable from the GitHub iOS app (Actions -> Run workflow).
+# One-time: add RENDER_DEPLOY_HOOK_URL to repo Settings -> Secrets and variables -> Actions
+#           (get it from Render -> webpoint-mobile -> Settings -> Deploy Hook), or run deploy/SET_HOOK.sh.
+
+name: Deploy live (mobile lane)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  LIVE_URL: https://webpoint-mobile.onrender.com
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "No RENDER_DEPLOY_HOOK_URL secret yet — Render autoDeploy-on-push still covers this. Skipping."
+            exit 0
+          fi
+          HTTP=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$HOOK")
+          { [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ]; } && echo "Deploy triggered (HTTP $HTTP)." || { echo "::error::Hook returned HTTP $HTTP"; exit 1; }
+
+  test-live:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Health gate — not live until 200
+        run: |
+          for i in $(seq 1 20); do
+            HTTP=$(curl -s -o /dev/null -w "%{http_code}" "$LIVE_URL/" || echo 000)
+            [ "$HTTP" = "200" ] && echo "LIVE confirmed (HTTP 200)." && exit 0
+            echo "attempt $i: HTTP $HTTP — waiting 15s"; sleep 15
+          done
+          echo "::error::Never reached 200 — bootstrap pending or build failed."; exit 1
